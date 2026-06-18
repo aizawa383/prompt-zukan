@@ -29,7 +29,7 @@ export default function HomeClient({ initialLogs, categories, tags }: Props) {
       const q = query.toLowerCase()
       result = result.filter(log =>
         [log.title, log.purpose, log.prompt_body, log.result,
-          log.insights, log.reuse_points, log.ideas,
+          log.memo, log.supplement,
           ...log.tags.map((t: any) => t.name),
           ...log.categories.map((c: any) => c.name),
         ].some(v => v?.toLowerCase().includes(q))

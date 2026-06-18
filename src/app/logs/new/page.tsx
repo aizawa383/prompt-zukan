@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import LogForm from '@/components/LogForm'
-import { createLog, createCategory, ensureDefaultCategories } from '@/app/actions'
+import { createLog, ensureDefaultCategories } from '@/app/actions'
 import Link from 'next/link'
 
 export default async function NewLogPage() {
@@ -11,10 +11,7 @@ export default async function NewLogPage() {
 
   await ensureDefaultCategories()
 
-  const [{ data: categories }, { data: tags }] = await Promise.all([
-    supabase.from('categories').select('*').order('name'),
-    supabase.from('tags').select('*').order('name'),
-  ])
+  const { data: tags } = await supabase.from('tags').select('*').order('name')
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
@@ -28,9 +25,7 @@ export default async function NewLogPage() {
       <div className="max-w-3xl mx-auto px-4 py-8">
         <LogForm
           action={createLog}
-          categories={categories ?? []}
           allTags={tags ?? []}
-          onAddCategory={createCategory}
         />
       </div>
     </div>

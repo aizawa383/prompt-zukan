@@ -16,11 +16,10 @@ export async function createLog(formData: FormData) {
     purpose: formData.get('purpose') as string || null,
     prompt_body: formData.get('prompt_body') as string || null,
     result: formData.get('result') as string || null,
-    insights: formData.get('insights') as string || null,
-    reuse_points: formData.get('reuse_points') as string || null,
-    ideas: formData.get('ideas') as string || null,
+    memo: formData.get('memo') as string || null,
+    supplement: formData.get('supplement') as string || null,
     source: formData.get('source') as string || null,
-    status: formData.get('status') as string || '未検証',
+    status: formData.get('status') as string || '未使用',
   }).select().single()
 
   if (error || !log) throw new Error('ログの作成に失敗しました')
@@ -41,20 +40,17 @@ export async function updateLog(id: string, formData: FormData) {
     purpose: formData.get('purpose') as string || null,
     prompt_body: formData.get('prompt_body') as string || null,
     result: formData.get('result') as string || null,
-    insights: formData.get('insights') as string || null,
-    reuse_points: formData.get('reuse_points') as string || null,
-    ideas: formData.get('ideas') as string || null,
+    memo: formData.get('memo') as string || null,
+    supplement: formData.get('supplement') as string || null,
     source: formData.get('source') as string || null,
-    status: formData.get('status') as string || '未検証',
+    status: formData.get('status') as string || '未使用',
     updated_at: new Date().toISOString(),
   }).eq('id', id).eq('user_id', user.id)
 
-  // 関連データ削除して再登録（並列実行）
   await Promise.all([
     supabase.from('log_categories').delete().eq('log_id', id),
     supabase.from('log_tags').delete().eq('log_id', id),
     supabase.from('reference_urls').delete().eq('log_id', id),
-    supabase.from('reference_images').delete().eq('log_id', id),
   ])
   await saveRelations(supabase, id, user.id, formData)
 
@@ -97,21 +93,10 @@ export async function recordView(logId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
-  await supabase.from('view_history').insert({ user_id: user.id, log_id: logId })
-  await supabase.from('logs').update({ last_viewed_at: new Date().toISOString() })
-    .eq('id', logId).eq('user_id', user.id)
-}
-
-// ─── カテゴリ追加 ─────────────────────────────────────────────────────
-export async function createCategory(name: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data } = await supabase.from('categories')
-    .upsert({ user_id: user.id, name }, { onConflict: 'user_id,name' })
-    .select().single()
-  return data
+  await Promise.all([
+    supabase.from('view_history').insert({ user_id: user.id, log_id: logId }),
+    supabase.from('logs').update({ last_viewed_at: new Date().toISOString() }).eq('id', logId).eq('user_id', user.id),
+  ])
 }
 
 // ─── ログアウト ────────────────────────────────────────────────────────
@@ -130,7 +115,7 @@ export async function ensureDefaultCategories() {
   const { count } = await supabase.from('categories').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
   if (count && count > 0) return
 
-  const defaults = ['画像生成', 'デザイン', 'Web制作', 'AI活用', '仕事術', '案件獲得', 'ブランディング', '文章作成', 'その他']
+  const defaults = ['画像生成', 'Web制作', 'デザイン', '文章作成', 'AI活用', '案件獲得', 'ブランディング', '仕事術', 'その他']
   await supabase.from('categories').insert(defaults.map(name => ({ user_id: user.id, name })))
 }
 
@@ -140,33 +125,23 @@ async function saveRelations(supabase: any, logId: string, userId: string, formD
   const tagNames = (formData.getAll('tags') as string[]).filter(n => n.trim())
   const urlValues = formData.getAll('url_value') as string[]
   const urlLabels = formData.getAll('url_label') as string[]
-  const imgPaths = formData.getAll('img_path') as string[]
-  const imgLabels = formData.getAll('img_label') as string[]
 
   await Promise.all([
-    // カテゴリ（upsert後にlog_categoriesへ登録）
     ...categoryNames.map(async name => {
       const { data: cat } = await supabase.from('categories')
         .upsert({ user_id: userId, name }, { onConflict: 'user_id,name' })
         .select().single()
       if (cat) await supabase.from('log_categories').upsert({ log_id: logId, category_id: cat.id })
     }),
-    // タグ（upsert後にlog_tagsへ登録）
     ...tagNames.map(async name => {
       const { data: tag } = await supabase.from('tags')
         .upsert({ user_id: userId, name: name.trim() }, { onConflict: 'user_id,name' })
         .select().single()
       if (tag) await supabase.from('log_tags').upsert({ log_id: logId, tag_id: tag.id })
     }),
-    // 参考URL
     (async () => {
       const urlRows = urlValues.map((url, i) => ({ log_id: logId, url, label: urlLabels[i] || null, sort_order: i })).filter(r => r.url)
       if (urlRows.length) await supabase.from('reference_urls').insert(urlRows)
-    })(),
-    // 参考画像
-    (async () => {
-      const imgRows = imgPaths.map((path, i) => ({ log_id: logId, path, label: imgLabels[i] || null, sort_order: i })).filter(r => r.path)
-      if (imgRows.length) await supabase.from('reference_images').insert(imgRows)
     })(),
   ])
 }

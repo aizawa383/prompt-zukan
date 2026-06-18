@@ -8,6 +8,8 @@ export const STATUS_STYLE: Record<Status, { label: string; bg: string; text: str
   活用済: { label: '活用済', bg: 'bg-green-100', text: 'text-green-600' },
 }
 
+export const CATEGORY_OPTIONS = ['画像生成', 'Web制作', 'デザイン', '文章作成', 'AI活用', '案件獲得', 'ブランディング', '仕事術', 'その他'] as const
+
 export type Log = {
   id: string
   user_id: string
@@ -15,6 +17,8 @@ export type Log = {
   purpose: string | null
   prompt_body: string | null
   result: string | null
+  memo: string | null
+  supplement: string | null
   insights: string | null
   reuse_points: string | null
   ideas: string | null
@@ -27,8 +31,6 @@ export type Log = {
   categories?: { id: string; name: string }[]
   tags?: { id: string; name: string }[]
   reference_urls?: { id: string; url: string; label: string | null }[]
-  reference_images?: { id: string; path: string; label: string | null }[]
 }
 
-export type Category = { id: string; name: string }
 export type Tag = { id: string; name: string }

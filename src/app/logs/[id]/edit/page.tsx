@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import LogForm from '@/components/LogForm'
-import { updateLog, createCategory } from '@/app/actions'
+import { updateLog } from '@/app/actions'
 import Link from 'next/link'
 
 export default async function EditLogPage({ params }: { params: Promise<{ id: string }> }) {
@@ -10,15 +10,13 @@ export default async function EditLogPage({ params }: { params: Promise<{ id: st
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: log }, { data: categories }, { data: tags }] = await Promise.all([
+  const [{ data: log }, { data: tags }] = await Promise.all([
     supabase.from('logs').select(`
       *,
       log_categories(categories(id, name)),
       log_tags(tags(id, name)),
-      reference_urls(*),
-      reference_images(*)
+      reference_urls(*)
     `).eq('id', id).eq('user_id', user.id).single(),
-    supabase.from('categories').select('*').order('name'),
     supabase.from('tags').select('*').order('name'),
   ])
 
@@ -29,15 +27,13 @@ export default async function EditLogPage({ params }: { params: Promise<{ id: st
     purpose: log.purpose ?? '',
     prompt_body: log.prompt_body ?? '',
     result: log.result ?? '',
-    insights: log.insights ?? '',
-    reuse_points: log.reuse_points ?? '',
-    ideas: log.ideas ?? '',
+    memo: log.memo ?? '',
+    supplement: log.supplement ?? '',
     source: log.source ?? '',
     status: log.status,
     categories: log.log_categories?.map((lc: any) => lc.categories?.name).filter(Boolean) ?? [],
     tags: log.log_tags?.map((lt: any) => lt.tags?.name).filter(Boolean) ?? [],
     reference_urls: log.reference_urls ?? [],
-    reference_images: log.reference_images ?? [],
   }
 
   const action = updateLog.bind(null, id)
@@ -54,10 +50,8 @@ export default async function EditLogPage({ params }: { params: Promise<{ id: st
       <div className="max-w-3xl mx-auto px-4 py-8">
         <LogForm
           action={action}
-          categories={categories ?? []}
           allTags={tags ?? []}
           defaultValues={defaultValues}
-          onAddCategory={createCategory}
         />
       </div>
     </div>

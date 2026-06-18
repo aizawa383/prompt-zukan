@@ -15,19 +15,16 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
     *,
     log_categories(categories(id, name)),
     log_tags(tags(id, name)),
-    reference_urls(*),
-    reference_images(*)
+    reference_urls(*)
   `).eq('id', id).eq('user_id', user.id).single()
 
   if (!log) notFound()
 
-  // 閲覧履歴を記録（ページ表示をブロックしない）
   void recordView(id)
 
   const categories = log.log_categories?.map((lc: any) => lc.categories).filter(Boolean) ?? []
   const tags = log.log_tags?.map((lt: any) => lt.tags).filter(Boolean) ?? []
   const urls = log.reference_urls ?? []
-  const images = log.reference_images ?? []
 
   function formatDate(str: string | null) {
     if (!str) return '—'
@@ -50,10 +47,10 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
           <div className="flex flex-wrap gap-1.5 mb-4">
             <StatusBadge status={log.status} />
             {categories.map((c: any) => (
-              <span key={c.id} className="text-xs bg-purple-100 text-purple-500 px-2 py-0.5 rounded-full">{c.name}</span>
+              <span key={c.id} className="text-xs bg-purple-100 text-purple-600 px-2.5 py-0.5 rounded-full font-medium">{c.name}</span>
             ))}
             {tags.map((t: any) => (
-              <span key={t.id} className="text-xs bg-pink-100 text-pink-500 px-2 py-0.5 rounded-full"># {t.name}</span>
+              <span key={t.id} className="text-xs border border-pink-200 text-pink-500 px-2.5 py-0.5 rounded-full"># {t.name}</span>
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -70,10 +67,9 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
         </div>
 
         {/* 基本情報 */}
-        {(log.purpose || log.source) && (
-          <Section title="基本情報">
-            {log.purpose && <Field label="目的" value={log.purpose} />}
-            {log.source && <Field label="出典" value={log.source} />}
+        {log.purpose && (
+          <Section title="やりたかったこと">
+            <p className="text-sm text-gray-700 leading-relaxed">{log.purpose}</p>
           </Section>
         )}
 
@@ -86,17 +82,23 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
         )}
 
         {/* 学習メモ */}
-        {(log.insights || log.reuse_points || log.ideas) && (
+        {log.memo && (
           <Section title="学習メモ">
-            {log.insights && <Field label="気づき" value={log.insights} />}
-            {log.reuse_points && <Field label="再利用ポイント" value={log.reuse_points} />}
-            {log.ideas && <Field label="思いついたアイデア" value={log.ideas} />}
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{log.memo}</p>
           </Section>
         )}
 
-        {/* 参考資料 */}
-        {(urls.length > 0 || images.length > 0) && (
-          <Section title="参考資料">
+        {/* 補足メモ */}
+        {log.supplement && (
+          <Section title="補足メモ">
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{log.supplement}</p>
+          </Section>
+        )}
+
+        {/* 参考元・資料 */}
+        {(log.source || urls.length > 0) && (
+          <Section title="参考元・資料">
+            {log.source && <Field label="出典" value={log.source} />}
             {urls.length > 0 && (
               <div>
                 <p className="text-xs font-semibold text-gray-400 mb-2">参考URL</p>
@@ -105,19 +107,6 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
                     <div key={u.id} className="text-sm">
                       {u.label && <span className="text-xs text-gray-400 mr-2">{u.label}</span>}
                       <a href={u.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline break-all">{u.url}</a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {images.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-gray-400 mb-2">参考画像</p>
-                <div className="space-y-1">
-                  {images.map((img: any) => (
-                    <div key={img.id} className="text-sm text-gray-500">
-                      {img.label && <span className="text-xs text-gray-400 mr-2">{img.label}</span>}
-                      <span className="break-all">{img.path}</span>
                     </div>
                   ))}
                 </div>
