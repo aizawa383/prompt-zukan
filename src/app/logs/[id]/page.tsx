@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { incrementReuse, recordView } from '@/app/actions'
 import StatusBadge from '@/components/StatusBadge'
+import CategoryChip from '@/components/CategoryChip'
 import DeleteButton from '@/components/DeleteButton'
 import Link from 'next/link'
 
@@ -32,51 +33,56 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-10">
+    <div className="min-h-screen bg-[#F8F7F4]">
+      <nav className="bg-white border-b border-[#E5E7EB] sticky top-0 z-10 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
-          <Link href="/home" className="text-sm text-gray-400 hover:text-purple-400 transition">← 一覧へ</Link>
+          <Link href="/home" className="text-sm text-[#6B7280] hover:text-[#2F2F2F] transition">← 一覧へ</Link>
         </div>
       </nav>
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-4">
 
         {/* ヘッダーカード */}
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-gray-100 p-6">
-          <h1 className="text-xl font-bold text-gray-700 mb-3 leading-snug">{log.title}</h1>
-          <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 shadow-sm">
+          <h1 className="text-xl font-bold text-[#2F2F2F] mb-3 leading-snug">{log.title}</h1>
+          <div className="flex flex-wrap gap-1.5 mb-5">
             <StatusBadge status={log.status} />
             {categories.map((c: any) => (
-              <span key={c.id} className="text-xs bg-purple-100 text-purple-600 px-2.5 py-0.5 rounded-full font-medium">{c.name}</span>
+              <CategoryChip key={c.id} name={c.name} size="md" />
             ))}
             {tags.map((t: any) => (
-              <span key={t.id} className="text-xs border border-pink-200 text-pink-500 px-2.5 py-0.5 rounded-full"># {t.name}</span>
+              <span key={t.id} className="text-xs border border-[#E5E7EB] text-[#6B7280] px-2.5 py-0.5 rounded-full"># {t.name}</span>
             ))}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 pt-4 border-t border-[#F3F4F6]">
             <form action={incrementReuse.bind(null, id)}>
-              <button type="submit" className="bg-amber-100 hover:bg-amber-200 text-amber-700 text-sm font-semibold px-4 py-2 rounded-full transition">
+              <button type="submit" className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-sm font-semibold px-4 py-2 rounded-full transition border border-amber-200">
                 ♻ 再利用した（{log.reuse_count}回）
               </button>
             </form>
-            <Link href={`/logs/${id}/edit`} className="bg-blue-50 hover:bg-blue-100 text-blue-500 text-sm font-semibold px-4 py-2 rounded-full transition">
+            <Link href={`/logs/${id}/edit`} className="bg-[#F8F7F4] hover:bg-[#F3F4F6] text-[#6B7280] text-sm font-semibold px-4 py-2 rounded-full transition border border-[#E5E7EB]">
               ✏ 編集
             </Link>
             <DeleteButton id={id} />
           </div>
         </div>
 
-        {/* 基本情報 */}
+        {/* やりたかったこと */}
         {log.purpose && (
           <Section title="やりたかったこと">
-            <p className="text-sm text-gray-700 leading-relaxed">{log.purpose}</p>
+            <p className="text-sm text-[#2F2F2F] leading-relaxed">{log.purpose}</p>
           </Section>
         )}
 
         {/* プロンプト */}
         {(log.prompt_body || log.result) && (
           <Section title="プロンプト">
-            {log.prompt_body && <Field label="プロンプト本文" value={log.prompt_body} mono />}
+            {log.prompt_body && (
+              <div>
+                <p className="text-xs font-semibold text-[#6B7280] mb-2">プロンプト本文</p>
+                <pre className="text-xs text-[#2F2F2F] font-mono bg-[#F8F7F4] rounded-xl p-4 whitespace-pre-wrap leading-relaxed border border-[#E5E7EB]">{log.prompt_body}</pre>
+              </div>
+            )}
             {log.result && <Field label="実行結果" value={log.result} />}
           </Section>
         )}
@@ -84,14 +90,14 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
         {/* 学習メモ */}
         {log.memo && (
           <Section title="学習メモ">
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{log.memo}</p>
+            <p className="text-sm text-[#2F2F2F] whitespace-pre-wrap leading-relaxed">{log.memo}</p>
           </Section>
         )}
 
         {/* 補足メモ */}
         {log.supplement && (
           <Section title="補足メモ">
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{log.supplement}</p>
+            <p className="text-sm text-[#2F2F2F] whitespace-pre-wrap leading-relaxed">{log.supplement}</p>
           </Section>
         )}
 
@@ -101,12 +107,12 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
             {log.source && <Field label="出典" value={log.source} />}
             {urls.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-gray-400 mb-2">参考URL</p>
-                <div className="space-y-1">
+                <p className="text-xs font-semibold text-[#6B7280] mb-2">参考URL</p>
+                <div className="space-y-1.5">
                   {urls.map((u: any) => (
-                    <div key={u.id} className="text-sm">
-                      {u.label && <span className="text-xs text-gray-400 mr-2">{u.label}</span>}
-                      <a href={u.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline break-all">{u.url}</a>
+                    <div key={u.id} className="text-sm flex items-center gap-2">
+                      {u.label && <span className="text-xs text-[#9CA3AF]">{u.label}</span>}
+                      <a href={u.url} target="_blank" rel="noopener noreferrer" className="text-purple-500 hover:underline break-all text-xs">{u.url}</a>
                     </div>
                   ))}
                 </div>
@@ -116,9 +122,9 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
         )}
 
         {/* 記録 */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <p className="text-xs font-bold text-purple-400 tracking-widest uppercase mb-3">記録</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-400">
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
+          <p className="text-xs font-bold text-[#9CA3AF] tracking-widest uppercase mb-3">記録</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-[#9CA3AF]">
             <span>作成：{formatDate(log.created_at)}</span>
             <span>更新：{formatDate(log.updated_at)}</span>
             <span>最終閲覧：{formatDate(log.last_viewed_at)}</span>
@@ -133,20 +139,18 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
-      <p className="text-xs font-bold text-purple-400 tracking-widest uppercase">{title}</p>
+    <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-4 shadow-sm">
+      <p className="text-xs font-bold text-[#6B7280] tracking-widest uppercase pb-3 border-b border-[#F3F4F6]">{title}</p>
       {children}
     </div>
   )
 }
 
-function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-gray-400 mb-1">{label}</p>
-      <p className={`text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ${mono ? 'font-mono bg-purple-50 rounded-xl p-3 text-xs' : ''}`}>
-        {value}
-      </p>
+      <p className="text-xs font-semibold text-[#6B7280] mb-1">{label}</p>
+      <p className="text-sm text-[#2F2F2F] whitespace-pre-wrap leading-relaxed">{value}</p>
     </div>
   )
 }
