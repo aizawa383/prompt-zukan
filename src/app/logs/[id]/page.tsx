@@ -21,8 +21,8 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
 
   if (!log) notFound()
 
-  // 閲覧履歴を非同期で記録
-  await recordView(id)
+  // 閲覧履歴を記録（ページ表示をブロックしない）
+  void recordView(id)
 
   const categories = log.log_categories?.map((lc: any) => lc.categories).filter(Boolean) ?? []
   const tags = log.log_tags?.map((lt: any) => lt.tags).filter(Boolean) ?? []

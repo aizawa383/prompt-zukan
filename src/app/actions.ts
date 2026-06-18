@@ -49,11 +49,13 @@ export async function updateLog(id: string, formData: FormData) {
     updated_at: new Date().toISOString(),
   }).eq('id', id).eq('user_id', user.id)
 
-  // 関連データ削除して再登録
-  await supabase.from('log_categories').delete().eq('log_id', id)
-  await supabase.from('log_tags').delete().eq('log_id', id)
-  await supabase.from('reference_urls').delete().eq('log_id', id)
-  await supabase.from('reference_images').delete().eq('log_id', id)
+  // 関連データ削除して再登録（並列実行）
+  await Promise.all([
+    supabase.from('log_categories').delete().eq('log_id', id),
+    supabase.from('log_tags').delete().eq('log_id', id),
+    supabase.from('reference_urls').delete().eq('log_id', id),
+    supabase.from('reference_images').delete().eq('log_id', id),
+  ])
   await saveRelations(supabase, id, user.id, formData)
 
   revalidatePath(`/logs/${id}`)
@@ -125,38 +127,46 @@ export async function ensureDefaultCategories() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
+  const { count } = await supabase.from('categories').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+  if (count && count > 0) return
+
   const defaults = ['画像生成', 'デザイン', 'Web制作', 'AI活用', '仕事術', '案件獲得', 'ブランディング', '文章作成', 'その他']
-  for (const name of defaults) {
-    await supabase.from('categories').upsert({ user_id: user.id, name }, { onConflict: 'user_id,name' })
-  }
+  await supabase.from('categories').insert(defaults.map(name => ({ user_id: user.id, name })))
 }
 
 // ─── ヘルパー ──────────────────────────────────────────────────────────
 async function saveRelations(supabase: any, logId: string, userId: string, formData: FormData) {
   const categoryNames = formData.getAll('categories') as string[]
-  for (const name of categoryNames) {
-    const { data: cat } = await supabase.from('categories')
-      .upsert({ user_id: userId, name }, { onConflict: 'user_id,name' })
-      .select().single()
-    if (cat) await supabase.from('log_categories').upsert({ log_id: logId, category_id: cat.id })
-  }
-
-  const tagNames = formData.getAll('tags') as string[]
-  for (const name of tagNames) {
-    if (!name.trim()) continue
-    const { data: tag } = await supabase.from('tags')
-      .upsert({ user_id: userId, name: name.trim() }, { onConflict: 'user_id,name' })
-      .select().single()
-    if (tag) await supabase.from('log_tags').upsert({ log_id: logId, tag_id: tag.id })
-  }
-
+  const tagNames = (formData.getAll('tags') as string[]).filter(n => n.trim())
   const urlValues = formData.getAll('url_value') as string[]
   const urlLabels = formData.getAll('url_label') as string[]
-  const urlRows = urlValues.map((url, i) => ({ log_id: logId, url, label: urlLabels[i] || null, sort_order: i })).filter(r => r.url)
-  if (urlRows.length) await supabase.from('reference_urls').insert(urlRows)
-
   const imgPaths = formData.getAll('img_path') as string[]
   const imgLabels = formData.getAll('img_label') as string[]
-  const imgRows = imgPaths.map((path, i) => ({ log_id: logId, path, label: imgLabels[i] || null, sort_order: i })).filter(r => r.path)
-  if (imgRows.length) await supabase.from('reference_images').insert(imgRows)
+
+  await Promise.all([
+    // カテゴリ（upsert後にlog_categoriesへ登録）
+    ...categoryNames.map(async name => {
+      const { data: cat } = await supabase.from('categories')
+        .upsert({ user_id: userId, name }, { onConflict: 'user_id,name' })
+        .select().single()
+      if (cat) await supabase.from('log_categories').upsert({ log_id: logId, category_id: cat.id })
+    }),
+    // タグ（upsert後にlog_tagsへ登録）
+    ...tagNames.map(async name => {
+      const { data: tag } = await supabase.from('tags')
+        .upsert({ user_id: userId, name: name.trim() }, { onConflict: 'user_id,name' })
+        .select().single()
+      if (tag) await supabase.from('log_tags').upsert({ log_id: logId, tag_id: tag.id })
+    }),
+    // 参考URL
+    (async () => {
+      const urlRows = urlValues.map((url, i) => ({ log_id: logId, url, label: urlLabels[i] || null, sort_order: i })).filter(r => r.url)
+      if (urlRows.length) await supabase.from('reference_urls').insert(urlRows)
+    })(),
+    // 参考画像
+    (async () => {
+      const imgRows = imgPaths.map((path, i) => ({ log_id: logId, path, label: imgLabels[i] || null, sort_order: i })).filter(r => r.path)
+      if (imgRows.length) await supabase.from('reference_images').insert(imgRows)
+    })(),
+  ])
 }
