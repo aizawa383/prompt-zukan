@@ -42,8 +42,7 @@ export default function LogForm({ action, allTags, defaultValues = {} }: Props) 
   const [imagePreview, setImagePreview] = useState<string | null>(defaultValues.image_url ?? null)
   const [imageError, setImageError] = useState('')
 
-  const unselectedTags = allTags.filter(t => !selectedTags.includes(t.name))
-  const filteredSuggestions = tagInput ? unselectedTags.filter(t => t.name.includes(tagInput)) : []
+  const filteredSuggestions = tagInput ? allTags.filter(t => t.name.includes(tagInput) && !selectedTags.includes(t.name)) : []
 
   function toggleCat(name: string) {
     setSelectedCats(prev => prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name])
@@ -78,7 +77,11 @@ export default function LogForm({ action, allTags, defaultValues = {} }: Props) 
     setPending(true)
     const fd = new FormData(e.currentTarget)
     selectedCats.forEach(c => fd.append('categories', c))
-    selectedTags.forEach(t => fd.append('tags', t))
+    // 入力中のタグもEnter不要で保存
+    const tagsToSave = [...selectedTags]
+    const pending = tagInput.trim()
+    if (pending && !tagsToSave.includes(pending)) tagsToSave.push(pending)
+    tagsToSave.forEach(t => fd.append('tags', t))
     urls.forEach(u => { fd.append('url_value', u.url); fd.append('url_label', u.label) })
 
     if (imageFile) {
@@ -208,14 +211,21 @@ export default function LogForm({ action, allTags, defaultValues = {} }: Props) 
         <div>
           <label className={labelCls}>タグ <span className="text-[#9CA3AF] font-normal">（選択または入力）</span></label>
 
-          {unselectedTags.length > 0 && (
+          {allTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2 mb-3">
-              {unselectedTags.map(t => (
-                <button type="button" key={t.id} onClick={() => toggleTag(t.name)}
-                  className="text-xs px-2.5 py-0.5 rounded-full border border-[#E5E7EB] text-[#9CA3AF] hover:border-[#D1D5DB] hover:text-[#6B7280] transition">
-                  # {t.name}
-                </button>
-              ))}
+              {allTags.map(t => {
+                const selected = selectedTags.includes(t.name)
+                return (
+                  <button type="button" key={t.id} onClick={() => toggleTag(t.name)}
+                    className={`text-xs px-2.5 py-0.5 rounded border transition ${
+                      selected
+                        ? 'border-[#7C3AED] text-[#7C3AED] bg-[#F5F3FF] font-semibold'
+                        : 'border-[#E8E8E8] text-[#A0A0A0] hover:border-[#C4B5FD] hover:text-[#7C3AED]'
+                    }`}>
+                    #{t.name}
+                  </button>
+                )
+              })}
             </div>
           )}
 
