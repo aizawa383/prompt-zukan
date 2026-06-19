@@ -12,10 +12,11 @@ export default function Icon() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: 280,
+      fontSize: 260,
       color: '#9333ea',
+      fontWeight: 700,
     }}>
-      ✦
+      図
     </div>,
     { width: 512, height: 512 }
   )

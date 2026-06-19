@@ -12,10 +12,11 @@ export default function AppleIcon() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: 100,
+      fontSize: 96,
       color: '#9333ea',
+      fontWeight: 700,
     }}>
-      ✦
+      図
     </div>,
     { width: 180, height: 180 }
   )
