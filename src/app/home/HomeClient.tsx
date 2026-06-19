@@ -18,7 +18,7 @@ export default function HomeClient({ initialLogs, categories, tags }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<Status | null>(null)
-  const [sort, setSort] = useState('created_at')
+  const [sort, setSort] = useState('updated_at')
 
   const logs = useMemo(() => {
     let result = initialLogs.map(log => ({
@@ -43,7 +43,8 @@ export default function HomeClient({ initialLogs, categories, tags }: Props) {
 
     result.sort((a, b) => {
       if (sort === 'reuse_count') return b.reuse_count - a.reuse_count
-      return new Date(b[sort] ?? 0).getTime() - new Date(a[sort] ?? 0).getTime()
+      if (sort === 'updated_at_asc') return new Date(a.updated_at ?? 0).getTime() - new Date(b.updated_at ?? 0).getTime()
+      return new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime()
     })
     return result
   }, [initialLogs, query, selectedCategory, selectedTag, selectedStatus, sort])
@@ -152,10 +153,9 @@ export default function HomeClient({ initialLogs, categories, tags }: Props) {
             <span className="text-[#B0A0D8] text-sm">⇅</span>
             <select value={sort} onChange={e => setSort(e.target.value)}
               className="text-[12px] text-[#6B7280] bg-transparent outline-none cursor-pointer border-none">
-              <option value="created_at">作成日順</option>
-              <option value="updated_at">更新日順</option>
-              <option value="reuse_count">再利用回数順</option>
-              <option value="last_viewed_at">最終閲覧順</option>
+              <option value="updated_at">更新日（新しい順）</option>
+              <option value="updated_at_asc">更新日（古い順）</option>
+              <option value="reuse_count">利用回数（多い順）</option>
             </select>
           </div>
         </div>
