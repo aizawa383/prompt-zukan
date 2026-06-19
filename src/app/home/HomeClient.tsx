@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import StatusBadge from '@/components/StatusBadge'
 import CategoryChip from '@/components/CategoryChip'
 import { Status, STATUS_LIST, CATEGORY_OPTIONS, CATEGORY_STYLE, CategoryOption } from '@/lib/types'
@@ -159,6 +160,11 @@ export default function HomeClient({ initialLogs, categories, tags }: Props) {
                   <div className="bg-white rounded-xl border border-[#E8E8E8] overflow-hidden hover:shadow-sm hover:-translate-y-px transition-all cursor-pointer h-full flex flex-col">
                     {/* 用途カラーの上ライン */}
                     <div style={{ height: '3px', background: accentColor }} />
+                    {log.image_url && (
+                      <div className="w-full h-32 bg-[#F8F7F4] overflow-hidden">
+                        <Image src={log.image_url} alt={log.title} width={400} height={128} className="w-full h-full object-cover" unoptimized />
+                      </div>
+                    )}
                     <div className="px-4 pt-3.5 pb-4 flex flex-col flex-1">
                       <div className="flex items-start justify-between gap-2 mb-1.5">
                         <h2 className="text-[13px] font-semibold text-[#1F1F1F] leading-snug flex-1">{log.title}</h2>

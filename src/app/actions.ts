@@ -20,6 +20,7 @@ export async function createLog(formData: FormData) {
     supplement: formData.get('supplement') as string || null,
     source: formData.get('source') as string || null,
     status: formData.get('status') as string || '未使用',
+    image_url: formData.get('image_url') as string || null,
   }).select().single()
 
   if (error || !log) throw new Error('ログの作成に失敗しました')
@@ -44,6 +45,7 @@ export async function updateLog(id: string, formData: FormData) {
     supplement: formData.get('supplement') as string || null,
     source: formData.get('source') as string || null,
     status: formData.get('status') as string || '未使用',
+    image_url: formData.get('image_url') as string || null,
     updated_at: new Date().toISOString(),
   }).eq('id', id).eq('user_id', user.id)
 

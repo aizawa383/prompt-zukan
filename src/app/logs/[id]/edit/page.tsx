@@ -34,6 +34,7 @@ export default async function EditLogPage({ params }: { params: Promise<{ id: st
     categories: log.log_categories?.map((lc: any) => lc.categories?.name).filter(Boolean) ?? [],
     tags: log.log_tags?.map((lt: any) => lt.tags?.name).filter(Boolean) ?? [],
     reference_urls: log.reference_urls ?? [],
+    image_url: log.image_url ?? '',
   }
 
   const action = updateLog.bind(null, id)

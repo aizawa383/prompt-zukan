@@ -5,6 +5,7 @@ import StatusBadge from '@/components/StatusBadge'
 import CategoryChip from '@/components/CategoryChip'
 import DeleteButton from '@/components/DeleteButton'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default async function LogDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -66,6 +67,13 @@ export default async function LogDetailPage({ params }: { params: Promise<{ id: 
             <DeleteButton id={id} />
           </div>
         </div>
+
+        {/* 画像 */}
+        {log.image_url && (
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden shadow-sm">
+            <Image src={log.image_url} alt={log.title} width={800} height={500} className="w-full object-contain max-h-[500px]" unoptimized />
+          </div>
+        )}
 
         {/* やりたかったこと */}
         {log.purpose && (

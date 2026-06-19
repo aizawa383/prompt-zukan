@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
+import { createClient } from '@/lib/supabase/client'
 import { STATUS_LIST, CATEGORY_OPTIONS, CATEGORY_STYLE, CategoryOption } from '@/lib/types'
 
 type Props = {
@@ -18,6 +20,7 @@ type Props = {
     categories?: string[]
     tags?: string[]
     reference_urls?: { url: string; label: string | null }[]
+    image_url?: string
   }
 }
 
@@ -35,6 +38,9 @@ export default function LogForm({ action, allTags, defaultValues = {} }: Props) 
     defaultValues.reference_urls?.map(u => ({ url: u.url, label: u.label ?? '' })) ?? []
   )
   const [pending, setPending] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(defaultValues.image_url ?? null)
+  const [imageError, setImageError] = useState('')
 
   const unselectedTags = allTags.filter(t => !selectedTags.includes(t.name))
   const filteredSuggestions = tagInput ? unselectedTags.filter(t => t.name.includes(tagInput)) : []
@@ -54,6 +60,19 @@ export default function LogForm({ action, allTags, defaultValues = {} }: Props) 
     setShowSuggestions(false)
   }
 
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('5MB以下の画像を選択してください')
+      e.target.value = ''
+      return
+    }
+    setImageError('')
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setPending(true)
@@ -61,6 +80,21 @@ export default function LogForm({ action, allTags, defaultValues = {} }: Props) 
     selectedCats.forEach(c => fd.append('categories', c))
     selectedTags.forEach(t => fd.append('tags', t))
     urls.forEach(u => { fd.append('url_value', u.url); fd.append('url_label', u.label) })
+
+    if (imageFile) {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      const ext = imageFile.name.split('.').pop()
+      const path = `${user!.id}/${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('log-images').upload(path, imageFile)
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from('log-images').getPublicUrl(path)
+        fd.set('image_url', publicUrl)
+      }
+    } else if (defaultValues.image_url) {
+      fd.set('image_url', defaultValues.image_url)
+    }
+
     await action(fd)
     setPending(false)
   }
@@ -105,6 +139,28 @@ export default function LogForm({ action, allTags, defaultValues = {} }: Props) 
           <label className={labelCls}>実行結果</label>
           <textarea name="result" rows={5} defaultValue={defaultValues.result ?? ''} className={textareaCls} />
         </div>
+      </section>
+
+      {/* 画像 */}
+      <section className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-3">
+        <h2 className={sectionHeadingCls}>画像</h2>
+        {imagePreview && (
+          <div className="relative w-full rounded-xl overflow-hidden border border-[#E5E7EB] bg-[#F8F7F4]">
+            <Image src={imagePreview} alt="プレビュー" width={800} height={400} className="w-full object-contain max-h-64" unoptimized />
+            <button type="button" onClick={() => { setImageFile(null); setImagePreview(null) }}
+              className="absolute top-2 right-2 bg-white/80 hover:bg-white text-[#6B7280] rounded-full w-7 h-7 flex items-center justify-center text-sm shadow-sm border border-[#E5E7EB] transition">
+              ×
+            </button>
+          </div>
+        )}
+        <label className="flex items-center gap-2 cursor-pointer w-fit">
+          <span className="text-xs border border-dashed border-[#D1D5DB] text-[#9CA3AF] hover:text-[#6B7280] hover:border-[#C4B5FD] rounded-xl px-4 py-2 transition">
+            {imagePreview ? '画像を変更' : '＋ 画像を追加'}
+          </span>
+          <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+        </label>
+        {imageError && <p className="text-xs text-red-400">{imageError}</p>}
+        <p className="text-[10px] text-[#C0C0C0]">5MB以下のJPG・PNG・WEBPなど</p>
       </section>
 
       {/* 学習メモ */}
