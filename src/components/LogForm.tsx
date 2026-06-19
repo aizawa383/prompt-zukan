@@ -294,12 +294,13 @@ export default function LogForm({ action, allTags, defaultValues = {} }: Props) 
       </section>
 
       {/* 送信 */}
-      <div className="flex justify-end gap-3 pb-4">
-        <a href="/home" className="px-5 py-2.5 text-sm text-[#6B7280] border border-[#E5E7EB] rounded-full hover:border-[#D1D5DB] transition">キャンセル</a>
+      <div className="flex flex-col items-center gap-3 pb-4 pt-2">
         <button type="submit" disabled={pending}
-          className="px-6 py-2.5 bg-purple-500 hover:bg-purple-600 text-white text-sm font-semibold rounded-full transition disabled:opacity-50 shadow-sm">
+          className="flex items-center gap-2 px-8 py-3 bg-[#6B50B8] hover:bg-[#5A42A0] text-white text-sm font-semibold rounded-full transition disabled:opacity-50 shadow-md">
+          <span className="text-[#C4B5FD]">✦</span>
           {pending ? '保存中…' : '保存する'}
         </button>
+        <a href="/home" className="text-xs text-[#C4B5FD] hover:text-[#9B8DC4] transition">キャンセル</a>
       </div>
     </form>
   )
