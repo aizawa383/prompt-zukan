@@ -19,6 +19,8 @@ export default function HomeClient({ initialLogs, categories, tags }: Props) {
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<Status | null>(null)
   const [sort, setSort] = useState('updated_at')
+  const [page, setPage] = useState(1)
+  const PER_PAGE = 12
 
   const logs = useMemo(() => {
     let result = initialLogs.map(log => ({
@@ -46,8 +48,12 @@ export default function HomeClient({ initialLogs, categories, tags }: Props) {
       if (sort === 'updated_at_asc') return new Date(a.updated_at ?? 0).getTime() - new Date(b.updated_at ?? 0).getTime()
       return new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime()
     })
+    setPage(1)
     return result
   }, [initialLogs, query, selectedCategory, selectedTag, selectedStatus, sort])
+
+  const totalPages = Math.ceil(logs.length / PER_PAGE)
+  const pagedLogs = logs.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   function formatDate(str: string) {
     return new Date(str).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })
@@ -169,15 +175,15 @@ export default function HomeClient({ initialLogs, categories, tags }: Props) {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {logs.map(log => (
+            {pagedLogs.map(log => (
               <Link key={log.id} href={`/logs/${log.id}`}>
                 <div className="bg-white rounded-2xl overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer h-full flex flex-col shadow-sm">
                   {log.image_url ? (
-                    <div className="w-full h-44 bg-[#F5F2FC] overflow-hidden">
-                      <Image src={log.image_url} alt={log.title} width={400} height={176} className="w-full h-full object-cover" unoptimized />
+                    <div className="w-full h-28 sm:h-40 bg-[#F5F2FC] overflow-hidden">
+                      <Image src={log.image_url} alt={log.title} width={400} height={160} className="w-full h-full object-cover" unoptimized />
                     </div>
                   ) : (
-                    <div className="w-full h-3 bg-gradient-to-r from-[#C4B5FD] to-[#DDD6FE]" />
+                    <div className="w-full h-1.5 bg-gradient-to-r from-[#C4B5FD] to-[#DDD6FE]" />
                   )}
                   <div className="px-4 pt-3.5 pb-4 flex flex-col flex-1">
                     <h2 className="text-[13px] font-bold text-[#1F1F1F] leading-snug mb-1.5">{log.title}</h2>
@@ -203,6 +209,39 @@ export default function HomeClient({ initialLogs, categories, tags }: Props) {
             ))}
           </div>
         )}
+
+        {/* ページネーション */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-1.5 mt-8">
+            <button
+              onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+              disabled={page === 1}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#9B8DC4] hover:bg-white disabled:opacity-30 transition"
+            >‹</button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => {
+              if (totalPages > 7 && Math.abs(n - page) > 2 && n !== 1 && n !== totalPages) {
+                if (n === page - 3 || n === page + 3) return <span key={n} className="text-[#C4B5FD] text-sm px-1">…</span>
+                return null
+              }
+              return (
+                <button key={n} onClick={() => { setPage(n); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition ${
+                    page === n ? 'bg-[#6B50B8] text-white shadow-sm' : 'text-[#9B8DC4] hover:bg-white'
+                  }`}>
+                  {n}
+                </button>
+              )
+            })}
+
+            <button
+              onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+              disabled={page === totalPages}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#9B8DC4] hover:bg-white disabled:opacity-30 transition"
+            >›</button>
+          </div>
+        )}
+
       </div>
     </div>
   )
